@@ -37,6 +37,9 @@ jobs:
         with:
           shared-key: ${{ runner.os }}-${{ matrix.rust }}
 
+      - name: Check features
+        run: cargo check --no-default-features --features rustls-tls
+
       - name: Run tests
         run: cargo test --workspace --all-features --verbose
 

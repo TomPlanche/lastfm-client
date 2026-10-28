@@ -156,9 +156,16 @@ lastfm-client = "4.0"
 
 | Feature | Description |
 |---------|-------------|
+| `default-tls` | Use the default TLS backend for `reqwest` *(enabled by default)* |
+| `native-tls` | Enable the `native-tls` TLS backend for `reqwest` |
+| `rustls-tls` | Enable the `rustls` TLS backend for `reqwest` |
 | `sqlite`   | SQLite export via `rusqlite` (bundled SQLite, no system dependency required) |
 | `progress` | Built-in terminal progress bar via `indicatif` — adds `.with_progress()` to all builders |
 | `full`     | Enables both `sqlite` and `progress` |
+
+> [!NOTE]
+> At least one TLS-enabling feature is required, otherwise requests to Last.Fm will fail at runtime. When depending on
+> this library with `default-features = false`, make sure to explicitly specify either `rustls-tls` or `native-tls`.
 
 ```toml
 [dependencies]
