@@ -461,7 +461,7 @@ async fn test_track_data_integrity() {
     // Verify date parsing
     if let Some(date) = &track.date {
         assert_eq!(date.uts, 1_715_637_600);
-        assert!(!date.text.is_empty());
+        assert_ne!(date.text, "");
     }
 }
 
