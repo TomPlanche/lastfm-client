@@ -36,6 +36,8 @@ fn extract_method_from_url(url: &str) -> String {
 
 /// HTTP client abstraction for making API requests
 #[async_trait]
+// `async_trait` adds `#[must_use]` to the boxed future that it returns.
+#[allow(clippy::double_must_use)]
 pub trait HttpClient: Send + Sync + std::fmt::Debug {
     /// Perform a GET request and return the response as JSON
     async fn get(&self, url: &str) -> Result<serde_json::Value>;

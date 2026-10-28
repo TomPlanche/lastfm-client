@@ -130,6 +130,6 @@ mod tests {
     fn vec_or_single_parses_empty_array() {
         let json = r#"{ "items": [] }"#;
         let parsed: Wrapper = serde_json::from_str(json).unwrap();
-        assert!(parsed.items.is_empty());
+        assert_eq!(parsed.items, Vec::<Item>::new());
     }
 }
