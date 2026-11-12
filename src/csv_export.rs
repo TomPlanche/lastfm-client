@@ -161,8 +161,7 @@ fn write_recent_tracks_csv(
         let date_uts = t
             .date
             .as_ref()
-            .map(|d| d.uts.to_string())
-            .unwrap_or_default();
+            .map_or_else(String::new, |d| d.uts.to_string());
         let streamable = if t.streamable { "true" } else { "false" };
         let now_playing = t.attr.as_ref().map_or("false", |a| a.nowplaying.as_str());
         w.write_record([
@@ -219,8 +218,7 @@ fn write_recent_tracks_extended_csv(
         let date_uts = t
             .date
             .as_ref()
-            .map(|d| d.uts.to_string())
-            .unwrap_or_default();
+            .map_or_else(String::new, |d| d.uts.to_string());
         let streamable = if t.streamable { "true" } else { "false" };
         let now_playing = t
             .attr
