@@ -32,7 +32,7 @@ pub enum LastFmError {
 
     /// Represents rate limiting error
     /// Access `retry_after` via the struct field
-    #[error("rate limit exceeded{}", retry_after.map(|d| format!(" (retry after {}ms)", d.as_millis())).unwrap_or_default())]
+    #[error("rate limit exceeded{}", retry_after.map_or_else(String::new, |d| format!(" (retry after {}ms)", d.as_millis())))]
     RateLimited {
         /// Suggested delay before retrying
         retry_after: Option<Duration>,
