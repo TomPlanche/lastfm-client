@@ -69,6 +69,32 @@ pub trait ResourceContainer {
     fn total(&self) -> u32;
     /// Extract the items from this container
     fn items(self) -> Vec<Self::ItemType>;
+
+    /// Whether Last.fm returned this item on top of the requested `limit`.
+    ///
+    /// `user.getrecenttracks` puts the track that plays now first in the
+    /// page, in addition to the `limit` scrobbles, and `total` does not count
+    /// it. Such an item must not count toward the limit: if it did, the
+    /// oldest scrobble of the page would be cut.
+    fn is_extra(_item: &Self::ItemType) -> bool {
+        false
+    }
+}
+
+/// Keeps the first `limit` items that count toward the limit, and all the
+/// extra items (see [`ResourceContainer::is_extra`]) among them.
+fn take_counted<R: ResourceContainer>(items: Vec<R::ItemType>, limit: u32) -> Vec<R::ItemType> {
+    let mut counted = 0;
+    items
+        .into_iter()
+        .filter(|item| {
+            if R::is_extra(item) {
+                return true;
+            }
+            counted += 1;
+            counted <= limit
+        })
+        .collect()
 }
 
 /// Generic function to fetch things with pagination
@@ -120,11 +146,7 @@ where
         single_params.insert("page".to_string(), "1".to_string());
 
         let response: R = fetch_json(&http, &single_params).await?;
-        let items: Vec<T> = response
-            .items()
-            .into_iter()
-            .take(final_limit as usize)
-            .collect();
+        let items: Vec<T> = take_counted::<R>(response.items(), final_limit);
 
         if let Some(cb) = on_progress {
             #[allow(clippy::cast_possible_truncation)]
@@ -166,13 +188,10 @@ where
                 let http = http.clone();
                 async move {
                     let response: R = fetch_json(&http, &call_params).await?;
-                    Ok::<Vec<T>, crate::error::LastFmError>(
-                        response
-                            .items()
-                            .into_iter()
-                            .take(call_limit as usize)
-                            .collect(),
-                    )
+                    Ok::<Vec<T>, crate::error::LastFmError>(take_counted::<R>(
+                        response.items(),
+                        call_limit,
+                    ))
                 }
             })
             .collect();

@@ -252,6 +252,87 @@ async fn test_recent_tracks_unlimited() {
     assert_eq!(tracks.len(), 2);
 }
 
+/// A page of recent tracks while a track plays: Last.fm puts the playing track
+/// first, without a date, on top of the `limit` scrobbles. `total` does not
+/// count it.
+fn mock_recent_tracks_with_now_playing() -> serde_json::Value {
+    let track = |name: &str, date: Option<&str>| {
+        let mut track = json!({
+            "artist": { "mbid": "", "#text": "Artist" },
+            "streamable": "0",
+            "image": [],
+            "mbid": "",
+            "album": { "mbid": "", "#text": "Album" },
+            "name": name,
+            "url": "https://www.last.fm/music/x"
+        });
+        match date {
+            Some(uts) => track["date"] = json!({ "uts": uts, "#text": "14 May 2024, 00:00" }),
+            None => track["@attr"] = json!({ "nowplaying": "true" }),
+        }
+        track
+    };
+    json!({
+        "recenttracks": {
+            "track": [
+                track("Playing", None),
+                track("Newest", Some("1715637700")),
+                track("Oldest", Some("1715637600")),
+            ],
+            "@attr": {
+                "user": "testuser", "page": "1", "perPage": "2",
+                "totalPages": "1", "total": "2"
+            }
+        }
+    })
+}
+
+fn create_now_playing_client() -> LastFmClient {
+    let config = ConfigBuilder::new()
+        .api_key("test_api_key")
+        .build()
+        .expect("Failed to build config");
+    let mock = MockClient::new().with_response(
+        "user.getrecenttracks",
+        mock_recent_tracks_with_now_playing(),
+    );
+    LastFmClient::with_http(config, Arc::new(mock))
+}
+
+#[tokio::test]
+async fn test_now_playing_track_does_not_cut_the_oldest_scrobble() {
+    let client = create_now_playing_client();
+
+    let tracks = client
+        .recent_tracks("testuser")
+        .unlimited()
+        .fetch()
+        .await
+        .expect("Failed to fetch recent tracks");
+
+    let names: Vec<_> = tracks.iter().map(|t| t.name.as_deref()).collect();
+    // The playing track does not count toward the limit (the total of 2):
+    // the 2 scrobbles stay, and the oldest one is not cut.
+    assert_eq!(names, [Some("Playing"), Some("Newest"), Some("Oldest")]);
+    assert!(tracks[0].date.is_none());
+}
+
+#[tokio::test]
+async fn test_check_currently_playing_still_finds_the_playing_track() {
+    let client = create_now_playing_client();
+
+    let playing = client
+        .recent_tracks("testuser")
+        .check_currently_playing()
+        .await
+        .expect("Failed to check the playing track");
+
+    assert_eq!(
+        playing.and_then(|track| track.name),
+        Some("Playing".to_owned())
+    );
+}
+
 #[tokio::test]
 async fn test_loved_tracks_flow() {
     let client = create_test_client();

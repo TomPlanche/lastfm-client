@@ -18,6 +18,11 @@ impl ResourceContainer for UserRecentTracks {
     fn items(self) -> Vec<Self::ItemType> {
         self.recenttracks.track
     }
+
+    /// The track that plays now has no date: Last.fm adds it on top of `limit`.
+    fn is_extra(item: &Self::ItemType) -> bool {
+        item.date.is_none()
+    }
 }
 
 impl ResourceContainer for UserRecentTracksExtended {
@@ -29,5 +34,10 @@ impl ResourceContainer for UserRecentTracksExtended {
 
     fn items(self) -> Vec<Self::ItemType> {
         self.recenttracks.track
+    }
+
+    /// The track that plays now has no date: Last.fm adds it on top of `limit`.
+    fn is_extra(item: &Self::ItemType) -> bool {
+        item.date.is_none()
     }
 }
