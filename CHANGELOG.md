@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.1.0] - 2026-11-12
+
+### Fixed
+
+- Recent tracks: the oldest scrobble of a page is no longer cut while a track plays. `user.getrecenttracks` puts the playing track first, without a date, on top of the `limit` scrobbles, and `total` does not count it. The fetch kept only the first `limit` items, so the playing track took the place of the oldest scrobble. The playing track no longer counts toward the limit (new `ResourceContainer::is_extra`, `false` by default). `fetch()` still returns the playing track first, so `check_currently_playing()` works as before.
+
 ## [5.0.0] - 2026-07-13
 
 ### Changed (breaking)
@@ -13,16 +19,16 @@ Text fields that the Last.fm API can return as an empty string (`""`) are now ty
 
 Affected public types and fields (all now `Option<String>`):
 
-| Type | Fields changed to `Option<String>` |
-|------|-------------------------------------|
-| `BaseMbidText` | `mbid`, `text` |
-| `BaseObject` | `mbid`, `url`, `name` |
-| `RecentTrack` | `name`, `url`, `mbid` |
-| `RecentTrackExtended` | `name`, `url`, `mbid` |
-| `LovedTrack` | `name`, `url`, `mbid` |
-| `TopTrack` | `name`, `url`, `mbid` |
-| `TopAlbum` | `name`, `url`, `mbid` |
-| `TopArtist` | `name`, `url`, `mbid` |
+| Type                  | Fields changed to `Option<String>` |
+| --------------------- | ---------------------------------- |
+| `BaseMbidText`        | `mbid`, `text`                     |
+| `BaseObject`          | `mbid`, `url`, `name`              |
+| `RecentTrack`         | `name`, `url`, `mbid`              |
+| `RecentTrackExtended` | `name`, `url`, `mbid`              |
+| `LovedTrack`          | `name`, `url`, `mbid`              |
+| `TopTrack`            | `name`, `url`, `mbid`              |
+| `TopAlbum`            | `name`, `url`, `mbid`              |
+| `TopArtist`           | `name`, `url`, `mbid`              |
 
 Code that reads these fields must now handle the `Option`. The idiomatic update is `field.as_deref().unwrap_or("")` (or `field.clone().unwrap_or_default()` where an owned `String` is required):
 
@@ -119,12 +125,12 @@ use lastfm_client::{LastFmClient, LimitBuilder};
 client.recent_tracks("user").limit(50).fetch().await?;
 ```
 
-| Trait | Methods | Import |
-|-------|---------|--------|
-| `LimitBuilder` | `limit`, `unlimited` | `use lastfm_client::LimitBuilder;` |
-| `FetchAndSave` | `fetch_and_save`, `fetch_and_save_sqlite` | `use lastfm_client::FetchAndSave;` |
+| Trait            | Methods                                       | Import                               |
+| ---------------- | --------------------------------------------- | ------------------------------------ |
+| `LimitBuilder`   | `limit`, `unlimited`                          | `use lastfm_client::LimitBuilder;`   |
+| `FetchAndSave`   | `fetch_and_save`, `fetch_and_save_sqlite`     | `use lastfm_client::FetchAndSave;`   |
 | `FetchAndUpdate` | `fetch_and_update`, `fetch_and_update_sqlite` | `use lastfm_client::FetchAndUpdate;` |
-| `Analyze` | `analyze`, `analyze_and_print` | `use lastfm_client::Analyze;` |
+| `Analyze`        | `analyze`, `analyze_and_print`                | `use lastfm_client::Analyze;`        |
 
 All four traits are re-exported from the crate root and from a new `prelude` module.
 The recommended import is:
@@ -170,17 +176,17 @@ let tracks = client.loved_tracks("user").limit(50).fetch().await?;
 - `with_progress()` builder method (requires the new `progress` feature) renders a live
   terminal progress bar while fetching, backed by [`indicatif`](https://github.com/console-rs/indicatif).
   Enable the feature and call `.with_progress()` before `.fetch()`:
-  ```toml
-  lastfm-client = { version = "4", features = ["progress"] }
-  ```
-  ```rust
-  let tracks = client.recent_tracks("user").with_progress().fetch().await?;
-  ```
-  The bar shows `{spinner} [{bar:40}] {pos}/{len} ({percent}%)` and finishes automatically.
+    ```toml
+    lastfm-client = { version = "4", features = ["progress"] }
+    ```
+    ```rust
+    let tracks = client.recent_tracks("user").with_progress().fetch().await?;
+    ```
+    The bar shows `{spinner} [{bar:40}] {pos}/{len} ({percent}%)` and finishes automatically.
 - `full` feature that enables both `sqlite` and `progress` at once:
-  ```toml
-  lastfm-client = { version = "4", features = ["full"] }
-  ```
+    ```toml
+    lastfm-client = { version = "4", features = ["full"] }
+    ```
 - **`user.getInfo`**: `client.user_info("username").fetch()` returns `UserInfo` with scrobble count,
   real name, country, registration date, and subscriber status.
 - **`client.user_exists("username")`**: convenience method returning `Ok(true/false)`;
@@ -193,12 +199,12 @@ let tracks = client.loved_tracks("user").limit(50).fetch().await?;
   methods — `.fetch_tracks()`, `.fetch_artists()`, `.fetch_albums()` — returning the corresponding
   `PersonalTagged*Page` type.
 - **Weekly chart endpoints** (four new methods on `LastFmClient`):
-  - `client.weekly_chart_list("username").fetch()` → `Vec<WeeklyChartRange>`
-  - `client.weekly_track_chart("username").range(&range).fetch()` → `Vec<WeeklyTrack>`
-  - `client.weekly_artist_chart("username").range(&range).fetch()` → `Vec<WeeklyArtist>`
-  - `client.weekly_album_chart("username").range(&range).fetch()` → `Vec<WeeklyAlbum>`
-  - All three chart builders expose `.from(u32)` and `.to(u32)` for manual range selection
-    in addition to the `.range(&WeeklyChartRange)` convenience setter.
+    - `client.weekly_chart_list("username").fetch()` → `Vec<WeeklyChartRange>`
+    - `client.weekly_track_chart("username").range(&range).fetch()` → `Vec<WeeklyTrack>`
+    - `client.weekly_artist_chart("username").range(&range).fetch()` → `Vec<WeeklyArtist>`
+    - `client.weekly_album_chart("username").range(&range).fetch()` → `Vec<WeeklyAlbum>`
+    - All three chart builders expose `.from(u32)` and `.to(u32)` for manual range selection
+      in addition to the `.range(&WeeklyChartRange)` convenience setter.
 - New public types: `UserInfo`, `UserTopTag`, `FriendProfile`, `FriendsPage`,
   `PersonalTaggedTrack`, `PersonalTaggedArtist`, `PersonalTaggedAlbum`,
   `PersonalTaggedTracksPage`, `PersonalTaggedArtistsPage`, `PersonalTaggedAlbumsPage`,
@@ -275,17 +281,17 @@ Loads all rows from a `.db` file produced by `fetch_and_save_sqlite` or
 
 #### New methods on `TrackList<RecentTrackExtended>`
 
-| Method | Returns | Description |
-|--------|---------|-------------|
-| `to_set()` | `TrackList<ScoredTrack>` | Deduplicate by `(name, artist)` and count plays |
-| `top_artists()` | `TrackList<ScoredArtist>` | Group by artist and count plays |
-| `top_albums()` | `TrackList<ScoredAlbum>` | Group by `(album, artist)` and count plays; empty-album tracks excluded |
-| `by_hour()` | `[u32; 24]` | Play counts per UTC hour (index = hour 0–23) |
-| `by_date()` | `BTreeMap<NaiveDate, u32>` | Play counts per calendar date (UTC), sorted chronologically |
-| `streak()` | `u32` | Longest consecutive listening-day streak |
-| `without_now_playing()` | `TrackList<RecentTrackExtended>` | Copy of the list without the currently-playing track |
-| `unique_artist_count()` | `usize` | Number of distinct artist names |
-| `unique_track_count()` | `usize` | Number of distinct `(name, artist)` pairs |
+| Method                  | Returns                          | Description                                                             |
+| ----------------------- | -------------------------------- | ----------------------------------------------------------------------- |
+| `to_set()`              | `TrackList<ScoredTrack>`         | Deduplicate by `(name, artist)` and count plays                         |
+| `top_artists()`         | `TrackList<ScoredArtist>`        | Group by artist and count plays                                         |
+| `top_albums()`          | `TrackList<ScoredAlbum>`         | Group by `(album, artist)` and count plays; empty-album tracks excluded |
+| `by_hour()`             | `[u32; 24]`                      | Play counts per UTC hour (index = hour 0–23)                            |
+| `by_date()`             | `BTreeMap<NaiveDate, u32>`       | Play counts per calendar date (UTC), sorted chronologically             |
+| `streak()`              | `u32`                            | Longest consecutive listening-day streak                                |
+| `without_now_playing()` | `TrackList<RecentTrackExtended>` | Copy of the list without the currently-playing track                    |
+| `unique_artist_count()` | `usize`                          | Number of distinct artist names                                         |
+| `unique_track_count()`  | `usize`                          | Number of distinct `(name, artist)` pairs                               |
 
 All methods take `&self` (non-consuming) and are `#[must_use]`.
 
@@ -309,17 +315,17 @@ All three types implement `Display`, `Ord` (by `play_count`), `Eq`, `Serialize`,
 
 #### New methods on `TrackList<RecentTrack>`
 
-| Method | Returns | Description |
-|--------|---------|-------------|
-| `to_set()` | `TrackList<ScoredTrack>` | Deduplicate by `(name, artist)` and count plays |
-| `top_artists()` | `TrackList<ScoredArtist>` | Group by artist and count plays |
-| `top_albums()` | `TrackList<ScoredAlbum>` | Group by `(album, artist)` and count plays; empty-album tracks excluded |
-| `by_hour()` | `[u32; 24]` | Play counts per UTC hour (index = hour 0–23) |
-| `by_date()` | `BTreeMap<NaiveDate, u32>` | Play counts per calendar date (UTC), sorted chronologically |
-| `streak()` | `u32` | Longest consecutive listening-day streak |
-| `without_now_playing()` | `TrackList<RecentTrack>` | Copy of the list without the currently-playing track |
-| `unique_artist_count()` | `usize` | Number of distinct artist names |
-| `unique_track_count()` | `usize` | Number of distinct `(name, artist)` pairs |
+| Method                  | Returns                    | Description                                                             |
+| ----------------------- | -------------------------- | ----------------------------------------------------------------------- |
+| `to_set()`              | `TrackList<ScoredTrack>`   | Deduplicate by `(name, artist)` and count plays                         |
+| `top_artists()`         | `TrackList<ScoredArtist>`  | Group by artist and count plays                                         |
+| `top_albums()`          | `TrackList<ScoredAlbum>`   | Group by `(album, artist)` and count plays; empty-album tracks excluded |
+| `by_hour()`             | `[u32; 24]`                | Play counts per UTC hour (index = hour 0–23)                            |
+| `by_date()`             | `BTreeMap<NaiveDate, u32>` | Play counts per calendar date (UTC), sorted chronologically             |
+| `streak()`              | `u32`                      | Longest consecutive listening-day streak                                |
+| `without_now_playing()` | `TrackList<RecentTrack>`   | Copy of the list without the currently-playing track                    |
+| `unique_artist_count()` | `usize`                    | Number of distinct artist names                                         |
+| `unique_track_count()`  | `usize`                    | Number of distinct `(name, artist)` pairs                               |
 
 All methods take `&self` (non-consuming) and are `#[must_use]`.
 
@@ -329,9 +335,9 @@ All methods take `&self` (non-consuming) and are `#[must_use]`.
 
 - **`TrackList<T>`** (`src/types/track_list.rs`): Newtype wrapper around `Vec<T>` returned by all `fetch()` and `fetch_extended()` methods. Implements `Display` (items printed in descending order — most recent first for time-stamped types, most played first for playcount types), `Deref`/`DerefMut` to `Vec<T>`, `From<Vec<T>>`, `From<TrackList<T>> for Vec<T>`, `IntoIterator` (by value, shared ref, and mutable ref), and `FromIterator`. All existing code using the result as a slice or vec continues to work unchanged via deref coercion.
 - **`Ord` (and `PartialOrd`, `Eq`, `PartialEq`) for all resource types**:
-  - `RecentTrack`, `RecentTrackExtended`: ordered by `date.uts`; a `None` date (now-playing track) sorts as the most recent.
-  - `LovedTrack`: ordered by `date.uts`.
-  - `TopTrack`, `TopArtist`, `TopAlbum`: ordered by `playcount`.
+    - `RecentTrack`, `RecentTrackExtended`: ordered by `date.uts`; a `None` date (now-playing track) sorts as the most recent.
+    - `LovedTrack`: ordered by `date.uts`.
+    - `TopTrack`, `TopArtist`, `TopAlbum`: ordered by `playcount`.
 - **`TrackList` re-exported** from the crate root.
 
 ### Changed
@@ -348,8 +354,8 @@ All methods take `&self` (non-consuming) and are `#[must_use]`.
 
 ### SQLite schema addition
 
-| Type | Table | Notable columns |
-|------|-------|-----------------|
+| Type                  | Table                    | Notable columns                                                                                                                               |
+| --------------------- | ------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------- |
 | `RecentTrackExtended` | `recent_tracks_extended` | `name`, `url`, `mbid`, `artist`, `artist_mbid`, `artist_url`, `album`, `album_mbid`, `album_url`, `date_uts` (NULL when now-playing), `loved` |
 
 ## [3.4.0] - 2026-03-16
@@ -377,13 +383,13 @@ All methods take `&self` (non-consuming) and are `#[must_use]`.
 
 ### SQLite schema
 
-| Type | Table | Key columns |
-|------|-------|-------------|
+| Type          | Table           | Key columns                                                                        |
+| ------------- | --------------- | ---------------------------------------------------------------------------------- |
 | `RecentTrack` | `recent_tracks` | `id PK`, `name`, `artist`, `album`, `date_uts` (nullable for now-playing), `loved` |
-| `LovedTrack` | `loved_tracks` | `id PK`, `name`, `artist`, `date_uts` |
-| `TopTrack` | `top_tracks` | `id PK`, `name`, `artist`, `playcount`, `rank` |
-| `TopArtist` | `top_artists` | `id PK`, `name`, `playcount`, `rank` |
-| `TopAlbum` | `top_albums` | `id PK`, `name`, `artist`, `playcount`, `rank` |
+| `LovedTrack`  | `loved_tracks`  | `id PK`, `name`, `artist`, `date_uts`                                              |
+| `TopTrack`    | `top_tracks`    | `id PK`, `name`, `artist`, `playcount`, `rank`                                     |
+| `TopArtist`   | `top_artists`   | `id PK`, `name`, `playcount`, `rank`                                               |
+| `TopAlbum`    | `top_albums`    | `id PK`, `name`, `artist`, `playcount`, `rank`                                     |
 
 ## [3.2.0] - 2026-03-16
 
@@ -419,9 +425,9 @@ All methods take `&self` (non-consuming) and are `#[must_use]`.
 ### Removed
 
 - **`lastfm_handler` module** (BREAKING): The entire deprecated v1.x API has been removed
-  - `LastFMHandler` struct and all its methods (`get_user_recent_tracks`, `get_user_top_tracks`, etc.)
-  - The duplicate private `ResourceContainer` trait that used different names (`ResourceType`, `total_resources()`, `resources()`)
-  - `TrackLimit` enum from `lastfm_handler` (the one in `types::period` remains)
+    - `LastFMHandler` struct and all its methods (`get_user_recent_tracks`, `get_user_top_tracks`, etc.)
+    - The duplicate private `ResourceContainer` trait that used different names (`ResourceType`, `total_resources()`, `resources()`)
+    - `TrackLimit` enum from `lastfm_handler` (the one in `types::period` remains)
 - All v1.x deprecation warnings are gone since the deprecated code no longer exists
 
 ### Changed
@@ -433,46 +439,50 @@ All methods take `&self` (non-consuming) and are `#[must_use]`.
 
 ### Migration from v2.x
 
-| v2.x (removed) | v3.0 equivalent |
-|---|---|
-| `LastFMHandler::new("user")` | `LastFmClient::new()?` |
-| `handler.get_user_recent_tracks(Some(100))` | `client.recent_tracks("user").limit(100).fetch().await?` |
-| `handler.get_user_recent_tracks_between(from, to, false)` | `client.recent_tracks("user").between(from, to).fetch().await?` |
+| v2.x (removed)                                              | v3.0 equivalent                                                           |
+| ----------------------------------------------------------- | ------------------------------------------------------------------------- |
+| `LastFMHandler::new("user")`                                | `LastFmClient::new()?`                                                    |
+| `handler.get_user_recent_tracks(Some(100))`                 | `client.recent_tracks("user").limit(100).fetch().await?`                  |
+| `handler.get_user_recent_tracks_between(from, to, false)`   | `client.recent_tracks("user").between(from, to).fetch().await?`           |
 | `handler.get_user_top_tracks(Some(50), Some(Period::Week))` | `client.top_tracks("user").limit(50).period(Period::Week).fetch().await?` |
-| `handler.get_user_loved_tracks(Some(100))` | `client.loved_tracks("user").limit(100).fetch().await?` |
-| `lastfm_client::lastfm_handler::TrackPlayInfo` | `lastfm_client::types::TrackPlayInfo` |
+| `handler.get_user_loved_tracks(Some(100))`                  | `client.loved_tracks("user").limit(100).fetch().await?`                   |
+| `lastfm_client::lastfm_handler::TrackPlayInfo`              | `lastfm_client::types::TrackPlayInfo`                                     |
 
 ## [2.0.0] - 2025-01-XX
 
 ### Added
 
 #### New V2.0 API
+
 - **LastFmClient**: New main client with builder pattern for configuration
 - **RecentTracksClient**: Dedicated client for recent tracks with fluent API
 - **Builder Pattern**: All API methods now support method chaining
-  - `.limit(n)` - Limit number of tracks
-  - `.unlimited()` - Fetch all available tracks
-  - `.since(timestamp)` - Fetch tracks since a timestamp
-  - `.between(from, to)` - Fetch tracks between two timestamps (validates to > from)
-  - `.extended(bool)` - Include extended track information
-  - `.fetch()` - Execute request and return results
-  - `.fetch_extended()` - Execute request with extended information
+    - `.limit(n)` - Limit number of tracks
+    - `.unlimited()` - Fetch all available tracks
+    - `.since(timestamp)` - Fetch tracks since a timestamp
+    - `.between(from, to)` - Fetch tracks between two timestamps (validates to > from)
+    - `.extended(bool)` - Include extended track information
+    - `.fetch()` - Execute request and return results
+    - `.fetch_extended()` - Execute request with extended information
 
 #### HTTP Abstraction Layer
+
 - **HttpClient trait**: Abstraction for HTTP communication enabling testability
 - **ReqwestClient**: Production HTTP client implementation
 - **MockClient**: Mock HTTP client for testing with predefined responses
 
 #### Retry Logic
+
 - **RetryClient**: Automatic retry wrapper for HTTP requests
 - **RetryPolicy**: Configurable retry strategies
-  - Exponential backoff (default): 100ms -> 200ms -> 400ms -> 800ms...
-  - Linear backoff: 1s -> 2s -> 3s -> 4s...
-  - Custom policies with configurable base delay and max delay
+    - Exponential backoff (default): 100ms -> 200ms -> 400ms -> 800ms...
+    - Linear backoff: 1s -> 2s -> 3s -> 4s...
+    - Custom policies with configurable base delay and max delay
 - Respects `is_retryable()` hints from error types
 - Honors server-specified retry delays via `retry_after()`
 
 #### Rate Limiting
+
 - **RateLimiter**: Sliding window rate limiting to prevent API abuse
 - **RateLimitedClient**: HTTP client wrapper with rate limiting
 - Configurable max requests per time window
@@ -480,37 +490,41 @@ All methods take `&self` (non-consuming) and are `#[must_use]`.
 - Automatic request pacing with async blocking
 
 #### Enhanced Error Handling
+
 - Rich error types with context and retry hints
 - `LastFmError::Api`: Now includes method name, error code, and retryable flag
 - **API error classification**: Automatic categorization of Last.fm error codes
-  - Retryable: 8 (operation failed), 11 (service offline), 16 (temporary), 29 (rate limit)
-  - Non-retryable: 6 (invalid params), 9 (invalid session), 10 (invalid key), etc.
+    - Retryable: 8 (operation failed), 11 (service offline), 16 (temporary), 29 (rate limit)
+    - Non-retryable: 6 (invalid params), 9 (invalid session), 10 (invalid key), etc.
 - `LastFmError::RateLimited`: Includes optional retry_after duration
 - Detection of Last.fm API quirk: errors returned with HTTP 200 status
 - `.is_retryable()` method to check if error can be retried
 - `.retry_after()` method to get suggested retry delay
 
 #### Configuration
+
 - **ConfigBuilder**: Builder pattern for client configuration
-  - `.api_key()` - Set API key directly
-  - `.from_env()` - Load from environment variables
-  - `.user_agent()` - Custom user agent
-  - `.timeout()` - Request timeout
-  - `.max_concurrent_requests()` - Concurrency limit
-  - `.retry_attempts()` - Number of retry attempts
-  - `.rate_limit()` - Rate limiting configuration
+    - `.api_key()` - Set API key directly
+    - `.from_env()` - Load from environment variables
+    - `.user_agent()` - Custom user agent
+    - `.timeout()` - Request timeout
+    - `.max_concurrent_requests()` - Concurrency limit
+    - `.retry_attempts()` - Number of retry attempts
+    - `.rate_limit()` - Rate limiting configuration
 
 #### Type System
+
 - **Unified types**: Removed Api* prefix from all types (breaking change for internal use only)
 - Enhanced deserializers handling both string and numeric JSON values
 - **Period enum**: Type-safe time period representation
 - **TrackLimit enum**: Explicit Limited/Unlimited distinction
 
 #### Testing
+
 - 62 tests (up from 7 in v1.1.0)
-  - 34 unit tests in `src/`
-  - 28 integration tests in `tests/integration_test.rs`
-  - 13 doc tests
+    - 34 unit tests in `src/`
+    - 28 integration tests in `tests/integration_test.rs`
+    - 13 doc tests
 - Comprehensive integration test suite with mock HTTP responses
 - Tests for retry logic, rate limiting, error handling, date validation
 - Fast execution (< 100ms) using mock strategy
@@ -518,19 +532,22 @@ All methods take `&self` (non-consuming) and are `#[must_use]`.
 ### Changed
 
 #### Production Quality Improvements
+
 - Replaced all `println!` debug statements with structured `tracing` logging
 - Fixed unsafe `.unwrap()` calls with proper error handling
 - Improved error messages with context
 - Better separation of concerns with modular architecture
 
 #### Internal Architecture
+
 - Split monolithic `LastFMHandler` into focused clients
 - New module structure:
-  - `src/client/` - HTTP client implementations
-  - `src/api/` - API-specific clients (recent_tracks, etc.)
-  - `src/types/` - Type definitions organized by domain
+    - `src/client/` - HTTP client implementations
+    - `src/api/` - API-specific clients (recent_tracks, etc.)
+    - `src/types/` - Type definitions organized by domain
 
 #### Dependencies
+
 - Added `async-trait = "0.1"` - For async trait methods
 - Added `thiserror = "1.0"` - For ergonomic error definitions
 - Added `parking_lot = "0.12"` - For efficient mutex in rate limiter
@@ -559,6 +576,7 @@ All methods take `&self` (non-consuming) and are `#[must_use]`.
 ## [1.1.0] - 2024-XX-XX
 
 ### Added
+
 - Support for loved tracks fetching
 - Support for top tracks fetching
 - Extended track information support
@@ -568,12 +586,14 @@ All methods take `&self` (non-consuming) and are `#[must_use]`.
 - Convenience methods for date range queries
 
 ### Changed
+
 - Improved pagination handling
 - Better error messages
 
 ## [1.0.0] - Initial Release
 
 ### Added
+
 - Basic Last.fm API integration
 - Recent tracks fetching
 - Analytics functionality
